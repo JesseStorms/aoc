@@ -17,7 +17,7 @@ var input string
 var words = []string{"one", "two", "three", "four", "five", "six", "seven", "eight", "nine"}
 
 func main() {
-	// fmt.Println("part 1:", part1(input))
+	fmt.Println("part 1:", part1(input))
 	fmt.Println("part 2:", part2(input))
 }
 
@@ -91,7 +91,7 @@ func parseInput2(input string) []int {
 		if i < 10 {
 			i = i + i*10
 		}
-		fmt.Println(i)
+		// fmt.Println(i)
 		res = append(res, i)
 	}
 	return res
