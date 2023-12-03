@@ -1,6 +1,7 @@
 package main
 
 import (
+	"aoc/utils"
 	_ "embed"
 	"fmt"
 	"regexp"
@@ -43,7 +44,7 @@ func parseInput(input string) []int {
 	res := []int{}
 	re := regexp.MustCompile(`[A-z]`)
 
-	for _, line := range strings.Split(input, "\r\n") {
+	for _, line := range utils.SplitNewLines(input) {
 		match := re.ReplaceAllString(line, "")
 
 		i, e := strconv.Atoi(match[0:1] + match[len(match)-1:])
@@ -62,7 +63,7 @@ func parseInput2(input string) []int {
 	res := []int{}
 	re := regexp.MustCompile(`[A-z]`)
 
-	for _, line := range strings.Split(input, "\r\n") {
+	for _, line := range utils.SplitNewLines(input) {
 		parsing := ""
 		newl := ""
 		for _, char := range line {

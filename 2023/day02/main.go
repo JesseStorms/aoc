@@ -1,11 +1,11 @@
 package main
 
 import (
+	"aoc/utils"
 	_ "embed"
 	"fmt"
 	"regexp"
 	"strconv"
-	"strings"
 	// "sort"
 )
 
@@ -20,7 +20,7 @@ func main() {
 
 func part1(input string) int {
 	games := []Game{}
-	for _, line := range strings.Split(input, "\r\n") {
+	for _, line := range utils.SplitNewLines(input) {
 		game, c_cube := parseGame(line)
 		game, valid := cubeCheck(game, c_cube)
 		if valid {
@@ -36,7 +36,7 @@ func part1(input string) int {
 
 func part2(input string) int {
 	games := []Game{}
-	for _, line := range strings.Split(input, "\r\n") {
+	for _, line := range utils.SplitNewLines(input) {
 		game, c_cube := parseGame(line)
 		game, _ = cubeCheck(game, c_cube)
 		games = append(games, game)

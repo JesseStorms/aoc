@@ -1,10 +1,10 @@
 package main
 
 import (
+	"aoc/utils"
 	_ "embed"
 	"fmt"
 	"strconv"
-	"strings"
 	"unicode"
 	// "sort"
 )
@@ -33,7 +33,6 @@ func part2(input string) int {
 	gears, _ := []partNumber{}, []partNumber{}
 	for _, part := range partNumbers {
 		if part.symbol != 'N' {
-
 			if part.symbol == '*' {
 				gears = append(gears, part)
 			}
@@ -86,9 +85,7 @@ func parseInput(input string) []partNumber {
 
 func buildMap(input string) []string {
 	// build map
-	var m []string
-	m = append(m, strings.Split(input, "\r\n")...)
-	return m
+	return utils.SplitNewLines(input)
 }
 
 func findSymbol(partMap []string, part partNumber) ([2]int, rune) {
