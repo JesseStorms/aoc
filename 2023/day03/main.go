@@ -4,6 +4,7 @@ import (
 	"aoc/utils"
 	_ "embed"
 	"fmt"
+	"math"
 	"strconv"
 	"unicode"
 	// "sort"
@@ -90,7 +91,8 @@ func buildMap(input string) []string {
 
 func findSymbol(partMap []string, part partNumber) ([2]int, rune) {
 	// Convert part number to string
-	string_num := strconv.Itoa(part.part)
+	// string_num := strconv.Itoa(part.part)
+	string_num := int(math.Log10(float64(part.part))) + 1
 
 	// Check each row in the vicinity of the part's starting position
 	for dy := -1; dy <= 1; dy++ {
@@ -102,7 +104,8 @@ func findSymbol(partMap []string, part partNumber) ([2]int, rune) {
 		}
 
 		// Check each character in the part number
-		for i := range string_num {
+		// for i := range string_num {
+		for i := 0; i < string_num; i++ {
 			// Check each column in the vicinity of the part's starting position
 			for dx := -1; dx <= 1; dx++ {
 				x := part.posStart[0] + dx + i
@@ -120,7 +123,6 @@ func findSymbol(partMap []string, part partNumber) ([2]int, rune) {
 			}
 		}
 	}
-
 	// Return -1, -1 and 'N' if no symbol is found
 	return [2]int{-1, -1}, 'N'
 }
