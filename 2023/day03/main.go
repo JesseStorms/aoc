@@ -14,47 +14,11 @@ var input string
 
 func main() {
 	fmt.Println("part 1:", part1(input))
-	// fmt.Println("part 2:", part2(input))
+	fmt.Println("part 2:", part2(input))
 }
 
 func part1(input string) int {
-	currentCharSequence := ""
-	partNumbers := []partNumber{}
-	currentPartNumber := partNumber{}
-	partMap := buildMap(input)
-
-	for y, line := range partMap {
-		// fmt.Println(line)
-		// xLoop:
-		for x, char := range line {
-			if _, err := strconv.Atoi(string(char)); err == nil {
-
-				currentCharSequence += string(char)
-				currentPartNumber.part, _ = strconv.Atoi(currentCharSequence)
-				// continue xLoop
-			} else {
-				if currentCharSequence != "" {
-					currentPartNumber.posEnd = [2]int{x, y}
-					currentPartNumber.posStart = [2]int{x - len(currentCharSequence), y}
-					currentPartNumber.part, _ = strconv.Atoi(currentCharSequence)
-					currentPartNumber.symbolPos, currentPartNumber.symbol = findSymbol(partMap, currentPartNumber)
-					partNumbers = append(partNumbers, currentPartNumber)
-					currentCharSequence = ""
-				}
-			}
-			// fmt.Println(currentPartNumber.symbolPos, currentPartNumber.symbol)
-
-		}
-		if currentCharSequence != "" {
-			currentPartNumber.posEnd = [2]int{len(line), y}
-			currentPartNumber.posStart = [2]int{len(line) - len(currentCharSequence), y}
-			currentPartNumber.part, _ = strconv.Atoi(currentCharSequence)
-			currentPartNumber.symbolPos, currentPartNumber.symbol = findSymbol(partMap, currentPartNumber)
-			partNumbers = append(partNumbers, currentPartNumber)
-			currentCharSequence = ""
-		}
-	}
-	// fmt.Println(partNumbers)
+	partNumbers := parseInput(input)
 	total := 0
 	for _, part := range partNumbers {
 		if part.symbol != 'N' {
@@ -62,6 +26,62 @@ func part1(input string) int {
 		}
 	}
 	return total
+}
+
+func part2(input string) int {
+	partNumbers := parseInput(input)
+	gears, _ := []partNumber{}, []partNumber{}
+	for _, part := range partNumbers {
+		if part.symbol != 'N' {
+
+			if part.symbol == '*' {
+				gears = append(gears, part)
+			}
+		}
+	}
+	total := 0
+	sharedGears := map[[2]int][]partNumber{}
+	for _, gear := range gears {
+		sharedGears[gear.symbolPos] = append(sharedGears[gear.symbolPos], gear)
+	}
+	for _, gear := range sharedGears {
+		if len(gear) == 2 {
+			total += gear[0].part * gear[1].part
+		}
+	}
+
+	return total
+}
+
+func parseInput(input string) []partNumber {
+	currentCharSequence := ""
+	partNumbers := []partNumber{}
+	currentPartNumber := partNumber{}
+	partMap := buildMap(input)
+
+	// Function to handle end of number sequence
+	handleEndOfSequence := func(x, y int) {
+		if currentCharSequence != "" {
+			currentPartNumber.posEnd = [2]int{x, y}
+			currentPartNumber.posStart = [2]int{x - len(currentCharSequence), y}
+			currentPartNumber.part, _ = strconv.Atoi(currentCharSequence)
+			currentPartNumber.symbolPos, currentPartNumber.symbol = findSymbol(partMap, currentPartNumber)
+			partNumbers = append(partNumbers, currentPartNumber)
+			currentCharSequence = ""
+		}
+	}
+
+	for y, line := range partMap {
+		for x, char := range line {
+			if _, err := strconv.Atoi(string(char)); err == nil {
+				currentCharSequence += string(char)
+			} else {
+				handleEndOfSequence(x, y)
+			}
+		}
+		handleEndOfSequence(len(line), y)
+	}
+	return partNumbers
 }
 
 func buildMap(input string) []string {
@@ -85,7 +105,7 @@ func findSymbol(partMap []string, part partNumber) ([2]int, rune) {
 		}
 
 		// Check each character in the part number
-		for i, char := range string_num {
+		for i := range string_num {
 			// Check each column in the vicinity of the part's starting position
 			for dx := -1; dx <= 1; dx++ {
 				x := part.posStart[0] + dx + i
@@ -98,7 +118,7 @@ func findSymbol(partMap []string, part partNumber) ([2]int, rune) {
 				// fmt.Println("checking", string_num, " specifically", string(char), "at", x, y, "which is", string(partMap[y][x]))
 				// If the current position is not a dot and not a digit, return it
 				if partMap[y][x] != '.' && !unicode.IsDigit(rune(partMap[y][x])) {
-					return [2]int{x, y}, char
+					return [2]int{x, y}, rune(partMap[y][x])
 				}
 			}
 		}
