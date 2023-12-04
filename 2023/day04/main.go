@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	// "sort"
@@ -15,7 +16,7 @@ var input string
 
 func main() {
 	fmt.Println("part 1:", part1(input))
-	// fmt.Println("part 2:", part2(input))
+	fmt.Println("part 2:", part2(input))
 }
 
 func part1(input string) int {
@@ -28,7 +29,30 @@ func part1(input string) int {
 	return total
 }
 
-// func part2()
+func part2(input string) int {
+	cards := parseInput(input)
+	// Part 2
+	for i, c := range cards {
+		for k := 0; k < c.Instances; k++ {
+			hits := 0
+			for _, n := range c.playing_numbers {
+				if slices.Contains(c.winning_numbers, n) {
+					hits += 1
+				}
+			}
+
+			for j := i + 1; j <= i+hits; j++ {
+				cards[j].Instances++
+			}
+		}
+	}
+
+	totalCards := 0
+	for _, c := range cards {
+		totalCards += c.Instances
+	}
+	return totalCards
+}
 
 func parseInput(input string) []card {
 	lines := utils.SplitNewLines(input)
@@ -64,7 +88,7 @@ func parseCard(line string) card {
 			card.playing_numbers = append(card.playing_numbers, num)
 		}
 	}
-
+	card.Instances = 1
 	return card
 }
 
@@ -72,6 +96,7 @@ type card struct {
 	id              int
 	winning_numbers []int
 	playing_numbers []int
+	Instances       int
 }
 
 func (c card) winning_matches() int {
