@@ -21,7 +21,7 @@ func main() {
 
 func part1(input string) int {
 	cards := parseInput(input)
-	fmt.Println(cards)
+	// fmt.Println(cards)
 	total := 0
 	for _, card := range cards {
 		total += card.value()
