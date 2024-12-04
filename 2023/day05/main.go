@@ -1,124 +1,141 @@
 package main
 
 import (
-	"aoc/utils"
 	_ "embed"
 	"fmt"
 	"strconv"
 	"strings"
-	// "sort"
+	"sync"
 )
 
 //go:embed input.txt
 var input string
 
 func main() {
-	// fmt.Println("part 1:", part1(input))
+	fmt.Println("part 1:", part1(input))
 	fmt.Println("part 2:", part2(input))
 }
 
 func part1(input string) int {
-	regions := utils.GetRegions(input)
-	seeds := parseSeeds(regions[0][0])
-	maps := []Routemap{}
-	for _, region := range regions[1:] {
-		maps = append(maps, parseMap(region))
+	lines := strings.Split(input, "\n")
+	seeds := parseSeedsPart1(lines[0])
+	maps := parseMaps(lines[1:])
+
+	lowestLocation := -1
+
+	for _, seed := range seeds {
+		location := mapSeedToLocation(seed, maps)
+		if lowestLocation == -1 || location < lowestLocation {
+			lowestLocation = location
+		}
 	}
 
-	return solve(seeds, maps)
+	return lowestLocation
 }
 
 func part2(input string) int {
-	regions := utils.GetRegions(input)
-	seeds := parseSeeds2(regions[0][0])
-	maps := []Routemap{}
-	for _, region := range regions[1:] {
-		maps = append(maps, parseMap(region))
+	lines := strings.Split(input, "\n")
+	seeds := parseSeeds(lines[0])
+	maps := parseMaps(lines[1:])
+
+	numWorkers := 4
+	seedsPerWorker := len(seeds) / numWorkers
+	results := make(chan int, numWorkers)
+	var wg sync.WaitGroup
+
+	for i := 0; i < numWorkers; i++ {
+		start := i * seedsPerWorker
+		end := start + seedsPerWorker
+		if i == numWorkers-1 {
+			end = len(seeds)
+		}
+		wg.Add(1)
+		go func(seeds []int) {
+			defer wg.Done()
+			worker(seeds, maps, results)
+		}(seeds[start:end])
 	}
 
-	return solve(seeds, maps)
-}
-
-func solve(seeds []Step, maps []Routemap) int {
-	result := []Step{}
-	results := make(chan Step, len(seeds))
-	for _, seed := range seeds {
-		go func(seed Step) {
-			results <- solveSeed(seed, maps, Location)
-		}(seed)
-	}
-
-	for i := 0; i < len(seeds); i++ {
-		result = append(result, <-results)
-	}
+	wg.Wait()
 	close(results)
 
-	min := result[0].Value
-
-	for _, step := range result {
-
-		if step.Value < min {
-			min = step.Value
+	lowestLocation := -1
+	for location := range results {
+		if lowestLocation == -1 || location < lowestLocation {
+			lowestLocation = location
 		}
 	}
-	return min
+
+	return lowestLocation
 }
 
-/*
-*
-Run through the seeds, and for each seed, run through the maps until the step's type matches the stage's type.
-*/
-func solveSeed(seed Step, maps []Routemap, stage Stage) Step {
-	for _, routemap := range maps {
-		seed = routemap.Solve(seed)
-	}
-	return seed
-}
-
-func parseSeeds(input string) []Step {
-	var result []Step
-	for _, part := range strings.Split(input, " ")[1:] {
-		value, _ := strconv.Atoi(part)
-		result = append(result, Step{Value: value, Type: Seed})
-	}
-	return result
-}
-
-/*
-the first number is the seed, the second is the length of the seed.
-example: 3 2 means the seed is 3, and the length is 2.
-this means that the seed is 3, 4, 5.
-*/
-func parseSeeds2(input string) []Step {
-	var result []Step
-	var values []int
-	for _, part := range strings.Split(input, " ")[1:] {
-		value, _ := strconv.Atoi(part)
-		values = append(values, value)
-	}
-	for i := 0; i < len(values); i += 2 {
-		result = append(result, Step{Value: values[i], Type: Seed})
-		for j := 1; j < values[i+1]; j++ {
-			result = append(result, Step{Value: values[i] + j, Type: Seed})
+func worker(seeds []int, maps map[string][][]int, results chan<- int) {
+	lowestLocation := -1
+	for _, seed := range seeds {
+		location := mapSeedToLocation(seed, maps)
+		if lowestLocation == -1 || location < lowestLocation {
+			lowestLocation = location
 		}
 	}
-	return result
+	results <- lowestLocation
 }
 
-func parseMap(input []string) Routemap {
-	var result Routemap
-	// header parsed here
-	mapType := StageMap[strings.Split(strings.Split(input[0], " ")[0], "-")[2]]
-	result.Type = mapType
-	for _, line := range input[1:] {
-		// 50 98 2
-		var route Route
-		parts := strings.Split(line, " ")
-		route.DestStart, _ = strconv.Atoi(parts[0])
-		route.SourceStart, _ = strconv.Atoi(parts[1])
-		route.Length, _ = strconv.Atoi(parts[2])
-		route.Type = mapType
-		result.Entries = append(result.Entries, route)
+func parseSeedsPart1(line string) []int {
+	parts := strings.Split(line, " ")[1:]
+	var seeds []int
+	for _, part := range parts {
+		seed, _ := strconv.Atoi(part)
+		seeds = append(seeds, seed)
 	}
-	return result
+	return seeds
+}
+
+func parseSeeds(line string) []int {
+	parts := strings.Split(line, " ")[1:]
+	var seeds []int
+	for i := 0; i < len(parts); i += 2 {
+		start, _ := strconv.Atoi(parts[i])
+		length, _ := strconv.Atoi(parts[i+1])
+		for j := 0; j < length; j++ {
+			seeds = append(seeds, start+j)
+		}
+	}
+	return seeds
+}
+
+func parseMaps(lines []string) map[string][][]int {
+	maps := make(map[string][][]int)
+	var currentMap string
+	for _, line := range lines {
+		if strings.Contains(line, "map:") {
+			currentMap = strings.TrimSuffix(line, " map:")
+			maps[currentMap] = [][]int{}
+		} else if line != "" {
+			parts := strings.Fields(line)
+			startDest, _ := strconv.Atoi(parts[0])
+			startSrc, _ := strconv.Atoi(parts[1])
+			length, _ := strconv.Atoi(parts[2])
+			maps[currentMap] = append(maps[currentMap], []int{startDest, startSrc, length})
+		}
+	}
+	return maps
+}
+
+func mapSeedToLocation(seed int, maps map[string][][]int) int {
+	categories := []string{"seed-to-soil", "soil-to-fertilizer", "fertilizer-to-water", "water-to-light", "light-to-temperature", "temperature-to-humidity", "humidity-to-location"}
+	value := seed
+	for _, category := range categories {
+		value = mapValue(value, maps[category])
+	}
+	return value
+}
+
+func mapValue(value int, mappings [][]int) int {
+	for _, mapping := range mappings {
+		startDest, startSrc, length := mapping[0], mapping[1], mapping[2]
+		if value >= startSrc && value < startSrc+length {
+			return startDest + (value - startSrc)
+		}
+	}
+	return value
 }
